@@ -1,0 +1,4 @@
+target
+.idea
+!config/base.toml
+config/*
