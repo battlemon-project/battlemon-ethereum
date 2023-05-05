@@ -1,10 +1,13 @@
 [app]
-host = "0.0.0.0"
+host = "127.0.0.1"
 port = 8000
 
 [db]
 host = "localhost"
-port = 5433
+port = 5432
 username = "postgres"
 password = "password"
-db_name = "auth_db"
+db_name = "app_db"
+
+[jwt]
+secret = "thisissecret"
