@@ -23,6 +23,7 @@ pub struct ValidatedPayload {
 impl TryFrom<Payload> for ValidatedPayload {
     type Error = String;
 
+    #[instrument(name = "Validate payload", skip_all)]
     fn try_from(Payload { user_id, signature }: Payload) -> Result<Self, Self::Error> {
         let user_id = user_id
             .parse()
