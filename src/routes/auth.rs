@@ -62,7 +62,7 @@ pub async fn web3_auth(
         .begin()
         .await
         .wrap_err("Failed to start transaction")?;
-    store_jwt_token_db(&user_id_string, &jwt_token, &mut tx)
+    storing_jwt_token_db(&user_id_string, &jwt_token, &mut tx)
         .await
         .wrap_err("Failed to store jwt token into database")?;
     tx.commit().await.wrap_err("Failed to commit transaction")?;
@@ -84,13 +84,25 @@ async fn get_user_nonce_db(user_id: &str, db_pool: &PgPool) -> Result<Uuid, sqlx
     Ok(ret.nonce)
 }
 
-#[instrument(name = "Store JWT token in database", skip(tx, jwt_token))]
-async fn store_jwt_token_db(
+#[instrument(name = "Storing JWT token in database", skip(tx, jwt_token))]
+async fn storing_jwt_token_db(
     user_id: &str,
     jwt_token: &str,
     tx: &mut Transaction<'_, Postgres>,
 ) -> Result<(), sqlx::Error> {
-    todo!()
+    sqlx::query!(
+        r#"
+        update users
+        set jwt_token = $1
+        where user_id = $2
+        "#,
+        jwt_token,
+        user_id,
+    )
+    .execute(&mut *tx)
+    .await?;
+
+    Ok(())
 }
 
 #[derive(Error, Debug)]
