@@ -1,5 +1,6 @@
 create table users
 (
-    user_id varchar(42) primary key,
-    nonce   uuid not null
+    user_id    varchar(42) primary key,
+    nonce      uuid not null,
+    auth_token text
 )
