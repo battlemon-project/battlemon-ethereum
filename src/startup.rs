@@ -3,6 +3,8 @@ use crate::routes::{setup_router, SharedState};
 use axum::{routing::IntoMakeService, Router};
 use eyre::{Result, WrapErr};
 use hyper::{server::conn::AddrIncoming, Server};
+use jsonwebtoken::EncodingKey;
+use secrecy::ExposeSecret;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use std::net::TcpListener;
 use tracing::{info, instrument};
@@ -29,7 +31,8 @@ impl App {
         let listener =
             TcpListener::bind(&app_address).wrap_err("Failed to bind address for app")?;
         let port = listener.local_addr()?.port();
-        let server = setup_server(listener, db_pool)?;
+        let shared_secret = EncodingKey::from_secret(config.jwt.secret.expose_secret().as_ref());
+        let server = setup_server(listener, db_pool, shared_secret)?;
         Ok(Self { server, port })
     }
 
@@ -51,8 +54,15 @@ pub fn setup_db_pool(config: &DatabaseConfig) -> PgPool {
 }
 
 #[tracing::instrument(name = "Setup server", skip_all)]
-pub fn setup_server(listener: TcpListener, db_pool: PgPool) -> Result<HyperServer> {
-    let state = SharedState { db_pool };
+pub fn setup_server(
+    listener: TcpListener,
+    db_pool: PgPool,
+    shared_secret: EncodingKey,
+) -> Result<HyperServer> {
+    let state = SharedState {
+        db_pool,
+        shared_secret,
+    };
 
     let router = setup_router(state);
     let server = axum::Server::from_tcp(listener)?.serve(router.into_make_service());
