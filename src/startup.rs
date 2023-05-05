@@ -4,7 +4,6 @@ use crate::routes::{setup_router, SharedState};
 use axum::{routing::IntoMakeService, Router};
 use eyre::{Result, WrapErr};
 use hyper::{server::conn::AddrIncoming, Server};
-use jsonwebtoken::EncodingKey;
 use secrecy::ExposeSecret;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use std::net::TcpListener;
