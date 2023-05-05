@@ -1,8 +1,11 @@
-use axum::extract::{Json, State};
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    extract::{Json, State},
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use ethers::prelude::{Address, Signature, SignatureError};
 use eyre::{Report, Result, WrapErr};
+use jsonwebtoken::EncodingKey;
 use serde::Deserialize;
 use sqlx::PgPool;
 use thiserror::Error;
@@ -39,6 +42,7 @@ impl TryFrom<Payload> for ValidatedPayload {
 #[instrument(name = "Web3 auth", skip_all, err(Debug))]
 pub async fn web3_auth(
     State(db_pool): State<PgPool>,
+    State(key): State<EncodingKey>,
     Json(payload): Json<Payload>,
 ) -> Result<(), AuthError> {
     let ValidatedPayload { user_id, signature } =
