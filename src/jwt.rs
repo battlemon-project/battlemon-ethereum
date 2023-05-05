@@ -1,8 +1,7 @@
 use chrono::{Duration, Utc};
-use eyre::Report;
-use jsonwebtoken::Header;
+use eyre::{Result, WrapErr};
+use jsonwebtoken::{EncodingKey, Header};
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -10,13 +9,7 @@ pub struct Claims {
     pub iat: usize,
 }
 
-#[derive(Error, Debug)]
-pub enum JwtError {
-    #[error(transparent)]
-    UnexpectedError(#[from] Report),
-}
-
-pub fn encode() -> Result<String, JwtError> {
+pub fn encode(key: &EncodingKey) -> Result<String> {
     let now = Utc::now();
     let expires_at = now + Duration::hours(1);
     let claims = Claims {
@@ -24,10 +17,5 @@ pub fn encode() -> Result<String, JwtError> {
         iat: now.timestamp() as usize,
     };
 
-    let jwt = jsonwebtoken::encode(&Header::default(), &claims, )
-    todo!()
-}
-
-pub fn verify() -> Result<(), JwtError> {
-    todo!()
+    jsonwebtoken::encode(&Header::default(), &claims, key).wrap_err("Failed to encode claims")
 }
