@@ -8,7 +8,7 @@ use strum::{Display, EnumString};
 pub struct MainConfig {
     pub app: AppConfig,
     pub db: DatabaseConfig,
-    pub jwt: Jwt,
+    pub jwt: JwtConfig,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -36,8 +36,8 @@ impl DatabaseConfig {
     pub fn without_db(&self) -> PgConnectOptions {
         PgConnectOptions::new()
             .host(&self.host)
-            .username(&self.username.expose_secret())
-            .password(&self.password.expose_secret())
+            .username(self.username.expose_secret())
+            .password(self.password.expose_secret())
             .port(self.port)
     }
 
@@ -47,7 +47,7 @@ impl DatabaseConfig {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct Jwt {
+pub struct JwtConfig {
     pub secret: Secret<String>,
 }
 
