@@ -1,0 +1,36 @@
+{
+  "db": "PostgreSQL",
+  "9647483920b3bda8c929449debf73e389d236acabf87f2dae7335d7700ae2a72": {
+    "describe": {
+      "columns": [
+        {
+          "name": "nonce",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        select nonce from users where user_id = $1 \n       "
+  },
+  "c32f2b7ae7bbf1ccf331f524930a7f5cca64112e702aab244d906c58abf5bcfb": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n        insert into users(user_id, nonce)\n        values ($1, $2)\n        on conflict (user_id)\n        do update set nonce = $2\n        "
+  }
+}
