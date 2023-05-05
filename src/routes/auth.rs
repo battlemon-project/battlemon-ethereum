@@ -36,7 +36,7 @@ impl TryFrom<Payload> for ValidatedPayload {
 }
 
 #[instrument(name = "Web3 auth", skip_all, err(Debug))]
-pub async fn auth(
+pub async fn web3_auth(
     State(db_pool): State<PgPool>,
     Json(payload): Json<Payload>,
 ) -> Result<(), AuthError> {

@@ -40,7 +40,7 @@ pub fn setup_router(state: SharedState) -> Router {
     Router::new()
         .route("/healthcheck", get(healthcheck))
         .route("/users/:user_id/nonce", get(set_nonce_for_address))
-        .route("/auth", post(auth))
+        .route("/web3_auth", post(web3_auth))
         .with_state(state)
         .layer(request_id_layer)
 }
