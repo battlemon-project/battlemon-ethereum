@@ -1,4 +1,5 @@
 use eyre::{Result, WrapErr};
+use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
 use sqlx::postgres::PgConnectOptions;
 use strum::{Display, EnumString};
@@ -7,6 +8,7 @@ use strum::{Display, EnumString};
 pub struct MainConfig {
     pub app: AppConfig,
     pub db: DatabaseConfig,
+    pub jwt: Jwt,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -25,8 +27,8 @@ impl AppConfig {
 pub struct DatabaseConfig {
     pub host: String,
     pub port: u16,
-    pub username: String,
-    pub password: String,
+    pub username: Secret<String>,
+    pub password: Secret<String>,
     pub db_name: String,
 }
 
@@ -34,14 +36,19 @@ impl DatabaseConfig {
     pub fn without_db(&self) -> PgConnectOptions {
         PgConnectOptions::new()
             .host(&self.host)
-            .username(&self.username)
-            .password(&self.password)
+            .username(&self.username.expose_secret())
+            .password(&self.password.expose_secret())
             .port(self.port)
     }
 
     pub fn with_db(&self) -> PgConnectOptions {
         self.without_db().database(&self.db_name)
     }
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Jwt {
+    pub secret: Secret<String>,
 }
 
 pub fn load_config() -> Result<MainConfig> {
