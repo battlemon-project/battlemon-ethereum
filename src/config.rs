@@ -15,6 +15,12 @@ pub struct AppConfig {
     pub port: u16,
 }
 
+impl AppConfig {
+    pub fn address(&self) -> String {
+        format!("{}:{}", self.host, self.port)
+    }
+}
+
 #[derive(Deserialize, Clone, Debug)]
 pub struct DatabaseConfig {
     pub host: String,
