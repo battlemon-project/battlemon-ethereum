@@ -8,7 +8,6 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use jsonwebtoken::EncodingKey;
 use sqlx::PgPool;
 use tower::ServiceBuilder;
 use tower_http::{
@@ -19,6 +18,7 @@ use tower_http::{
 use tracing::{instrument, Level};
 use uuid::Uuid;
 
+use crate::jwt::Jwt;
 pub use auth::*;
 pub use healthcheck::*;
 pub use users::*;
@@ -48,7 +48,7 @@ pub fn setup_router(state: SharedState) -> Router {
 
 #[derive(Clone, FromRef)]
 pub struct SharedState {
-    pub shared_secret: EncodingKey,
+    pub jwt: Jwt,
     pub db_pool: PgPool,
 }
 

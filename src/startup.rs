@@ -1,4 +1,5 @@
 use crate::config::{DatabaseConfig, MainConfig};
+use crate::jwt::Jwt;
 use crate::routes::{setup_router, SharedState};
 use axum::{routing::IntoMakeService, Router};
 use eyre::{Result, WrapErr};
@@ -31,8 +32,8 @@ impl App {
         let listener =
             TcpListener::bind(&app_address).wrap_err("Failed to bind address for app")?;
         let port = listener.local_addr()?.port();
-        let shared_secret = EncodingKey::from_secret(config.jwt.secret.expose_secret().as_ref());
-        let server = setup_server(listener, db_pool, shared_secret)?;
+        let jwt = Jwt::new(config.jwt.secret.expose_secret());
+        let server = setup_server(listener, db_pool, jwt)?;
         Ok(Self { server, port })
     }
 
@@ -54,15 +55,8 @@ pub fn setup_db_pool(config: &DatabaseConfig) -> PgPool {
 }
 
 #[tracing::instrument(name = "Setup server", skip_all)]
-pub fn setup_server(
-    listener: TcpListener,
-    db_pool: PgPool,
-    shared_secret: EncodingKey,
-) -> Result<HyperServer> {
-    let state = SharedState {
-        db_pool,
-        shared_secret,
-    };
+pub fn setup_server(listener: TcpListener, db_pool: PgPool, jwt: Jwt) -> Result<HyperServer> {
+    let state = SharedState { db_pool, jwt };
 
     let router = setup_router(state);
     let server = axum::Server::from_tcp(listener)?.serve(router.into_make_service());
