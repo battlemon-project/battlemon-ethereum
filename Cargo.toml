@@ -7,7 +7,7 @@ edition = "2021"
 # async runtime
 tokio = { version = "1.27.0", features = ["macros", "rt-multi-thread"] }
 # server
-axum = { version = "0.6.16", features = ["http2", "ws", "macros"] }
+axum = { version = "0.6.16", features = ["http2", "ws", "macros", "headers"] }
 tower = "0.4.13"
 tower-http = { version = "0.4.0", features = ["cors", "trace", "request-id", "util"] }
 hyper = { version = "0.14.26", features = ["server"] }
