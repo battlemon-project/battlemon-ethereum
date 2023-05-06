@@ -17,10 +17,11 @@ impl Jwt {
         }
     }
 
-    pub fn encode(&self) -> Result<String> {
+    pub fn encode(&self, user_id: &str) -> Result<String> {
         let now = Utc::now();
         let expires_at = now + Duration::hours(1);
         let claims = Claims {
+            user_id: user_id.to_owned(),
             exp: expires_at.timestamp() as usize,
             iat: now.timestamp() as usize,
         };
