@@ -1,15 +1,15 @@
 use axum::{
     extract::FromRef,
     http::Request,
-    Router,
     routing::{get, post},
+    Router,
 };
 use sqlx::PgPool;
 use tower::ServiceBuilder;
 use tower_http::{
     request_id::{MakeRequestId, RequestId},
-    ServiceBuilderExt,
     trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer},
+    ServiceBuilderExt,
 };
 use tracing::{instrument, Level};
 use uuid::Uuid;

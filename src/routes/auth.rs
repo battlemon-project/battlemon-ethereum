@@ -2,11 +2,11 @@ use axum::{
     async_trait,
     extract::{FromRef, FromRequestParts},
     extract::{Json, State},
-    headers::{Authorization, authorization::Bearer},
+    headers::{authorization::Bearer, Authorization},
     http::request::Parts,
     http::StatusCode,
-    RequestPartsExt,
-    response::{IntoResponse, Response}, TypedHeader,
+    response::{IntoResponse, Response},
+    RequestPartsExt, TypedHeader,
 };
 use chrono::Utc;
 use ethers::prelude::{Address, Signature, SignatureError};
@@ -45,6 +45,10 @@ impl TryFrom<Payload> for ValidatedPayload {
 
         Ok(Self { user_id, signature })
     }
+}
+
+pub async fn test(user: User) -> String {
+    format!("wow user works!!! user is {}", user.0)
 }
 
 #[instrument(name = "Web3 auth", skip_all, err(Debug))]
@@ -131,7 +135,7 @@ pub struct User(pub String);
 impl<S> FromRequestParts<S> for User
 where
     S: Send + Sync,
-    SharedState: FromRef<S>,
+    Jwt: FromRef<S>,
 {
     type Rejection = AuthError;
 
@@ -144,7 +148,7 @@ where
             .await
             .map_err(|_| AuthError::InvalidAuthToken)?;
 
-        let SharedState { jwt, .. } = SharedState::from_ref(state);
+        let jwt = Jwt::from_ref(state);
 
         let claims = jwt.decode(bearer.token())?;
         if claims.expired() {
