@@ -3,7 +3,7 @@ use tokio::task::JoinHandle;
 use tracing::{subscriber, Subscriber};
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 use tracing_log::LogTracer;
-use tracing_subscriber::{EnvFilter, fmt::MakeWriter, layer::SubscriberExt, Registry};
+use tracing_subscriber::{fmt::MakeWriter, layer::SubscriberExt, EnvFilter, Registry};
 
 /// Compose multiple layers into a `tracing`'s subscriber.
 ///
@@ -11,7 +11,7 @@ use tracing_subscriber::{EnvFilter, fmt::MakeWriter, layer::SubscriberExt, Regis
 ///
 /// We are using `impl Subscriber` as return type to avoid having to spell out the actual
 /// type of the returned subscriber, which is indeed quite complex.
-pub fn get_subscriber<Sink>(
+pub fn build_subscriber<Sink>(
     name: String,
     env_filter: String,
     sink: Sink,

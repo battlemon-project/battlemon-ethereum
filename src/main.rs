@@ -4,7 +4,7 @@ use tracing::info;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let subscriber = telemetry::get_subscriber(
+    let subscriber = telemetry::build_subscriber(
         env!("CARGO_CRATE_NAME").into(),
         "info".into(),
         std::io::stdout,
