@@ -1,5 +1,5 @@
 [package]
-name = "battlemon-auth"
+name = "battlemon-ethereum"
 version = "0.1.0"
 edition = "2021"
 

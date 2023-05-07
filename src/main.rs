@@ -1,4 +1,4 @@
-use battlemon_auth::{config, startup::App, telemetry};
+use battlemon_ethereum::{config, startup::App, telemetry};
 use eyre::{Result, WrapErr};
 use tracing::info;
 
