@@ -1,13 +1,15 @@
+use std::net::TcpListener;
+
+use axum::{Router, routing::IntoMakeService};
+use eyre::{Result, WrapErr};
+use hyper::{Server, server::conn::AddrIncoming};
+use secrecy::ExposeSecret;
+use sqlx::{PgPool, postgres::PgPoolOptions};
+use tracing::{info, instrument};
+
 use crate::config::{DatabaseConfig, MainConfig};
 use crate::jwt::Jwt;
 use crate::routes::{setup_router, SharedState};
-use axum::{routing::IntoMakeService, Router};
-use eyre::{Result, WrapErr};
-use hyper::{server::conn::AddrIncoming, Server};
-use secrecy::ExposeSecret;
-use sqlx::{postgres::PgPoolOptions, PgPool};
-use std::net::TcpListener;
-use tracing::{info, instrument};
 
 type HyperServer = Server<AddrIncoming, IntoMakeService<Router>>;
 

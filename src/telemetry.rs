@@ -3,7 +3,7 @@ use tokio::task::JoinHandle;
 use tracing::{subscriber, Subscriber};
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 use tracing_log::LogTracer;
-use tracing_subscriber::{fmt::MakeWriter, layer::SubscriberExt, EnvFilter, Registry};
+use tracing_subscriber::{EnvFilter, fmt::MakeWriter, layer::SubscriberExt, Registry};
 
 /// Compose multiple layers into a `tracing`'s subscriber.
 ///

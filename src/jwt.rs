@@ -1,7 +1,8 @@
-use crate::routes::Claims;
 use chrono::{Duration, Utc};
 use eyre::{Result, WrapErr};
-use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{DecodingKey, EncodingKey};
+
+use crate::routes::Claims;
 
 #[derive(Clone)]
 pub struct Jwt {
@@ -17,26 +18,22 @@ impl Jwt {
         }
     }
 
-    pub fn encode(&self, user_id: &str) -> Result<String> {
+    pub fn encode(&self, user_id: String) -> Result<String> {
         let now = Utc::now();
         let expires_at = now + Duration::hours(1);
         let claims = Claims {
-            user_id: user_id.to_owned(),
-            exp: expires_at.timestamp() as usize,
-            iat: now.timestamp() as usize,
+            sub: user_id,
+            exp: expires_at.timestamp(),
+            iat: now.timestamp(),
         };
 
-        jsonwebtoken::encode(&Header::default(), &claims, &self.encoding_key)
+        jsonwebtoken::encode(&Default::default(), &claims, &self.encoding_key)
             .wrap_err("Failed to encode claims")
     }
 
     pub fn decode(&self, token: &str) -> Result<Claims> {
-        jsonwebtoken::decode(
-            token,
-            &self.decoding_key,
-            &Validation::new(Algorithm::HS256),
-        )
-        .map(|decoded| decoded.claims)
-        .wrap_err("Failed to decode token")
+        jsonwebtoken::decode(token, &self.decoding_key, &Default::default())
+            .map(|decoded| decoded.claims)
+            .wrap_err("Failed to decode token")
     }
 }

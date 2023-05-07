@@ -1,16 +1,24 @@
-use crate::jwt::Jwt;
 use axum::{
+    async_trait,
+    extract::{FromRef, FromRequestParts},
     extract::{Json, State},
+    headers::{Authorization, authorization::Bearer},
+    http::request::Parts,
     http::StatusCode,
-    response::{IntoResponse, Response},
+    RequestPartsExt,
+    response::{IntoResponse, Response}, TypedHeader,
 };
+use chrono::Utc;
 use ethers::prelude::{Address, Signature, SignatureError};
 use eyre::{Report, Result, WrapErr};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Postgres, Transaction};
 use thiserror::Error;
 use tracing::instrument;
 use uuid::Uuid;
+
+use crate::jwt::Jwt;
+use crate::routes::SharedState;
 
 #[derive(Deserialize)]
 pub struct Payload {
@@ -57,7 +65,7 @@ pub async fn web3_auth(
         .verify(nonce.to_string(), user_id)
         .map_err(AuthError::SignatureVerification)?;
 
-    let jwt_token = jwt.encode()?;
+    let jwt_token = jwt.encode(user_id_string.clone())?;
     let mut tx = db_pool
         .begin()
         .await
@@ -105,25 +113,70 @@ async fn storing_jwt_token_db(
     Ok(())
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Claims {
+    pub sub: String,
+    pub exp: i64,
+    pub iat: i64,
+}
+impl Claims {
+    pub fn expired(&self) -> bool {
+        Utc::now().timestamp() > self.exp
+    }
+}
+
+pub struct User(pub String);
+
+#[async_trait]
+impl<S> FromRequestParts<S> for User
+where
+    S: Send + Sync,
+    SharedState: FromRef<S>,
+{
+    type Rejection = AuthError;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &S,
+    ) -> std::result::Result<Self, Self::Rejection> {
+        let bearer: TypedHeader<Authorization<Bearer>> = parts
+            .extract()
+            .await
+            .map_err(|_| AuthError::InvalidAuthToken)?;
+
+        let SharedState { jwt, .. } = SharedState::from_ref(state);
+
+        let claims = jwt.decode(bearer.token())?;
+        if claims.expired() {
+            return Err(AuthError::ExpiredAuthToken);
+        }
+
+        Ok(User(claims.sub))
+    }
+}
+
 #[derive(Error, Debug)]
 pub enum AuthError {
     #[error("Validation error: {0}")]
     Validation(String),
     #[error("Signature verification error: {0}")]
     SignatureVerification(#[from] SignatureError),
-    #[error(transparent)]
+    #[error("Header doesn't contain correct type of auth token")]
+    InvalidAuthToken,
+    #[error("Expired auth token")]
+    ExpiredAuthToken,
+    #[error("Unexpected error: {0}")]
     Unexpected(#[from] Report),
 }
 
 impl IntoResponse for AuthError {
     fn into_response(self) -> Response {
         match self {
-            AuthError::Validation(e) => (StatusCode::BAD_REQUEST, format!("{e}")),
-            AuthError::SignatureVerification(e) => (StatusCode::UNAUTHORIZED, format!("{e}")),
-            AuthError::Unexpected(e) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Internal server error: {e}"),
-            ),
+            AuthError::Validation(_) => (StatusCode::BAD_REQUEST, self.to_string()),
+            AuthError::SignatureVerification(_) => (StatusCode::UNAUTHORIZED, self.to_string()),
+            AuthError::InvalidAuthToken => (StatusCode::BAD_REQUEST, self.to_string()),
+            AuthError::ExpiredAuthToken => (StatusCode::UNAUTHORIZED, self.to_string()),
+            AuthError::Unexpected(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         }
         .into_response()
     }
