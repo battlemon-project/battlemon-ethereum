@@ -18,7 +18,6 @@ use tracing::instrument;
 use uuid::Uuid;
 
 use crate::jwt::Jwt;
-use crate::routes::SharedState;
 
 #[derive(Deserialize)]
 pub struct Payload {
