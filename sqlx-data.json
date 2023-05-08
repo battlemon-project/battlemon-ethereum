@@ -13,19 +13,6 @@
     },
     "query": "\n        insert into users(user_id, nonce)\n        values ($1, $2)\n        on conflict (user_id)\n        do update set nonce = $2\n        "
   },
-  "cee6ec89ef4902bbf2518349bc736e80f8920cb4b07a204fc14468b90e1aae88": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Text",
-          "Text"
-        ]
-      }
-    },
-    "query": "\n        update users\n        set jwt_token = $1\n        where user_id = $2\n        "
-  },
   "f1e4c7bae8efc967c4afd6a17d8724081f18660ba0377f82ef07f6a766701e88": {
     "describe": {
       "columns": [
