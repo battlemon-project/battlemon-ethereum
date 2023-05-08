@@ -59,6 +59,8 @@ jobs:
           context: .
           file: docker/project.Dockerfile
           push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: |
             ${{env.REGISTRY}}/${{env.REPOSITORY}}:latest
             ${{env.REGISTRY}}/${{env.REPOSITORY}}:${{env.IMAGE_TAG}}
