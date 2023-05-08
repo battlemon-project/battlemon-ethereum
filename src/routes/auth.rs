@@ -12,7 +12,7 @@ use chrono::Utc;
 use ethers::prelude::{Address, Signature, SignatureError};
 use eyre::{Report, Result, WrapErr};
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, Postgres, Transaction};
+use sqlx::PgPool;
 use thiserror::Error;
 use tracing::instrument;
 use uuid::Uuid;
@@ -69,14 +69,6 @@ pub async fn web3_auth(
         .map_err(AuthError::SignatureVerification)?;
 
     let jwt_token = jwt.encode(user_id_string.clone())?;
-    let mut tx = db_pool
-        .begin()
-        .await
-        .wrap_err("Failed to start transaction")?;
-    storing_jwt_token_db(&user_id_string, &jwt_token, &mut tx)
-        .await
-        .wrap_err("Failed to store jwt token into database")?;
-    tx.commit().await.wrap_err("Failed to commit transaction")?;
 
     Ok(jwt_token)
 }
@@ -93,27 +85,6 @@ async fn get_user_nonce_db(user_id: &str, db_pool: &PgPool) -> Result<Uuid, sqlx
     .await?;
 
     Ok(ret.nonce)
-}
-
-#[instrument(name = "Storing JWT token in database", skip(tx, jwt_token))]
-async fn storing_jwt_token_db(
-    user_id: &str,
-    jwt_token: &str,
-    tx: &mut Transaction<'_, Postgres>,
-) -> Result<(), sqlx::Error> {
-    sqlx::query!(
-        r#"
-        update users
-        set jwt_token = $1
-        where user_id = $2
-        "#,
-        jwt_token,
-        user_id,
-    )
-    .execute(&mut *tx)
-    .await?;
-
-    Ok(())
 }
 
 #[derive(Debug, Serialize, Deserialize)]
