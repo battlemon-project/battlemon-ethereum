@@ -10,4 +10,4 @@ password = "password"
 db_name = "app_db"
 
 [jwt]
-secret = "thisissecret"
+private_key = "rsa key in pem format"
