@@ -58,6 +58,4 @@ jobs:
           context: .
           file: docker/project.Dockerfile
           push: true
-          tags:
-            - $REGISTRY/$REPOSITORY:latest
-            - $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          tags: $REGISTRY/$REPOSITORY:latest, $REGISTRY/$REPOSITORY:$IMAGE_TAG
