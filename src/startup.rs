@@ -1,10 +1,10 @@
 use std::net::TcpListener;
 
-use axum::{Router, routing::IntoMakeService};
+use axum::{routing::IntoMakeService, Router};
 use eyre::{Result, WrapErr};
-use hyper::{Server, server::conn::AddrIncoming};
+use hyper::{server::conn::AddrIncoming, Server};
 use secrecy::ExposeSecret;
-use sqlx::{PgPool, postgres::PgPoolOptions};
+use sqlx::{postgres::PgPoolOptions, PgPool};
 use tracing::{info, instrument};
 
 use crate::config::{DatabaseConfig, MainConfig};
