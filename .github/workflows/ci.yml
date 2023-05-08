@@ -55,7 +55,7 @@ jobs:
           REPOSITORY: battlemon-ethereum
         uses: docker/build-push-action@v4
         with:
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           context: .
           file: docker/project.Dockerfile
           push: true
