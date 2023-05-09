@@ -1,8 +1,7 @@
 use chrono::{Duration, Utc};
 use eyre::{Result, WrapErr};
-use jsonwebtoken::{DecodingKey, EncodingKey};
-
-use crate::routes::Claims;
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone)]
 pub struct Jwt {
@@ -11,10 +10,10 @@ pub struct Jwt {
 }
 
 impl Jwt {
-    pub fn new(key: &str) -> Self {
+    pub fn new(encoding_key: EncodingKey, decoding_key: DecodingKey) -> Self {
         Self {
-            encoding_key: EncodingKey::from_secret(key.as_bytes()),
-            decoding_key: DecodingKey::from_secret(key.as_bytes()),
+            encoding_key,
+            decoding_key,
         }
     }
 
@@ -27,13 +26,30 @@ impl Jwt {
             iat: now.timestamp(),
         };
 
-        jsonwebtoken::encode(&Default::default(), &claims, &self.encoding_key)
+        jsonwebtoken::encode(&Header::new(Algorithm::RS256), &claims, &self.encoding_key)
             .wrap_err("Failed to encode claims")
     }
 
     pub fn decode(&self, token: &str) -> Result<Claims> {
-        jsonwebtoken::decode(token, &self.decoding_key, &Default::default())
-            .map(|decoded| decoded.claims)
-            .wrap_err("Failed to decode token")
+        jsonwebtoken::decode(
+            token,
+            &self.decoding_key,
+            &Validation::new(Algorithm::RS256),
+        )
+        .map(|decoded| decoded.claims)
+        .wrap_err("Failed to decode token")
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Claims {
+    pub sub: String,
+    pub exp: i64,
+    pub iat: i64,
+}
+
+impl Claims {
+    pub fn expired(&self) -> bool {
+        Utc::now().timestamp() > self.exp
     }
 }
