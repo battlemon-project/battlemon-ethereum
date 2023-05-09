@@ -264,6 +264,7 @@ dependencies = [
  "eyre",
  "hyper",
  "jsonwebtoken",
+ "once_cell",
  "secrecy",
  "serde",
  "serde_json",
