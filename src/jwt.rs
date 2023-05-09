@@ -26,7 +26,7 @@ impl Jwt {
             iat: now.timestamp(),
         };
 
-        jsonwebtoken::encode(&Header::new(Algorithm::RS256), &claims, &self.encoding_key)
+        jsonwebtoken::encode(&Header::new(Algorithm::EdDSA), &claims, &self.encoding_key)
             .wrap_err("Failed to encode claims")
     }
 
@@ -34,7 +34,7 @@ impl Jwt {
         jsonwebtoken::decode(
             token,
             &self.decoding_key,
-            &Validation::new(Algorithm::RS256),
+            &Validation::new(Algorithm::EdDSA),
         )
         .map(|decoded| decoded.claims)
         .wrap_err("Failed to decode token")
