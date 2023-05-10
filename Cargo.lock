@@ -258,6 +258,7 @@ name = "battlemon-ethereum"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "base64 0.21.0",
  "chrono",
  "config",
  "ethers",
@@ -265,6 +266,7 @@ dependencies = [
  "hyper",
  "jsonwebtoken",
  "once_cell",
+ "ring",
  "secrecy",
  "serde",
  "serde_json",
