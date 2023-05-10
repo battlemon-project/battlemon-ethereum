@@ -1,4 +1,7 @@
+use base64::Engine;
 use eyre::{Result, WrapErr};
+use jsonwebtoken::{DecodingKey, EncodingKey};
+use ring::signature::{Ed25519KeyPair, KeyPair};
 use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
 use sqlx::postgres::PgConnectOptions;
@@ -8,7 +11,7 @@ use strum::{Display, EnumString};
 pub struct MainConfig {
     pub app: AppConfig,
     pub db: DatabaseConfig,
-    pub jwt: JwtConfig,
+    pub secrets: SecretsConfig,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -47,8 +50,23 @@ impl DatabaseConfig {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct JwtConfig {
-    pub secret: Secret<String>,
+pub struct SecretsConfig {
+    pub key_pair: Secret<String>,
+}
+
+impl SecretsConfig {
+    pub fn jwt_keys(&self) -> Result<(EncodingKey, DecodingKey)> {
+        let pkcs8v2_keypair_base64_encoded = self.key_pair.expose_secret();
+        let key_pair_bytes = base64::engine::general_purpose::STANDARD
+            .decode(pkcs8v2_keypair_base64_encoded)
+            .wrap_err("Failed to decode keypair")?;
+        let key_pair = Ed25519KeyPair::from_pkcs8_maybe_unchecked(&key_pair_bytes)
+            .wrap_err("Failed to create `Ed25519KeyPair` from source")?;
+        let encoding_key = EncodingKey::from_ed_der(&key_pair_bytes);
+        let decoding_key = DecodingKey::from_ed_der(key_pair.public_key().as_ref());
+
+        Ok((encoding_key, decoding_key))
+    }
 }
 
 pub fn load_config() -> Result<MainConfig> {
@@ -63,7 +81,6 @@ pub fn load_config() -> Result<MainConfig> {
 
     let env_filename = format!("{}.toml", env.to_string());
     let config = config::Config::builder()
-        .add_source(config::File::from(config_path.join("base.toml")))
         .add_source(config::File::from(config_path.join(env_filename)))
         .add_source(
             config::Environment::with_prefix("APP")
