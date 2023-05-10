@@ -33,7 +33,11 @@ impl App {
         let listener =
             TcpListener::bind(&app_address).wrap_err("Failed to bind address for app")?;
         let port = listener.local_addr()?.port();
-        let jwt = Jwt::new(config.jwt.secret.expose_secret());
+        let (encoding_key, decoding_key) = config
+            .secrets
+            .jwt_keys()
+            .wrap_err("Failed to get keys for encoding decoding jwt from config")?;
+        let jwt = Jwt::new(encoding_key, decoding_key);
         let server = setup_server(listener, db_pool, jwt)?;
         Ok(Self { server, port })
     }
