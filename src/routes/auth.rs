@@ -8,10 +8,9 @@ use axum::{
     response::{IntoResponse, Response},
     RequestPartsExt, TypedHeader,
 };
-use chrono::Utc;
 use ethers::prelude::{Address, Signature, SignatureError};
 use eyre::{Report, Result, WrapErr};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use sqlx::PgPool;
 use thiserror::Error;
 use tracing::instrument;
@@ -44,10 +43,6 @@ impl TryFrom<Payload> for ValidatedPayload {
 
         Ok(Self { user_id, signature })
     }
-}
-
-pub async fn test(user: User) -> String {
-    format!("wow user works!!! user is {}", user.0)
 }
 
 #[instrument(name = "Web3 auth", skip_all, err(Debug))]
@@ -85,18 +80,6 @@ async fn get_user_nonce_db(user_id: &str, db_pool: &PgPool) -> Result<Uuid, sqlx
     .await?;
 
     Ok(ret.nonce)
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Claims {
-    pub sub: String,
-    pub exp: i64,
-    pub iat: i64,
-}
-impl Claims {
-    pub fn expired(&self) -> bool {
-        Utc::now().timestamp() > self.exp
-    }
 }
 
 pub struct User(pub String);
