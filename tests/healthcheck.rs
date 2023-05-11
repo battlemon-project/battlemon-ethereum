@@ -4,7 +4,7 @@ use eyre::Result;
 use helpers::spawn_app;
 
 #[tokio::test]
-async fn healthcheck() -> Result<()> {
+async fn healthcheck_success() -> Result<()> {
     let app = spawn_app().await;
     let response = app.get("healthcheck", None).await?;
     assert!(
