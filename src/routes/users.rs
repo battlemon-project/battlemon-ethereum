@@ -1,3 +1,4 @@
+use crate::address::ToHex;
 use axum::{
     extract::Path,
     extract::State,
@@ -5,7 +6,6 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
-use ethers::abi::AbiEncode;
 use ethers::prelude::Address;
 use eyre::WrapErr;
 use sqlx::{PgPool, Postgres, Transaction};
@@ -25,7 +25,7 @@ pub async fn set_nonce_for_address(
         .await
         .wrap_err("Failed to start sql transaction")?;
 
-    upsert_nonce_for_user_db(user_id.encode_hex(), &nonce, &mut tx)
+    upsert_nonce_for_user_db(user_id.to_hex(), &nonce, &mut tx)
         .await
         .wrap_err("Failed to upsert nonce for user")?;
 
