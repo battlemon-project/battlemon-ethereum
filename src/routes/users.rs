@@ -5,6 +5,8 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
+use ethers::abi::AbiEncode;
+use ethers::prelude::Address;
 use eyre::WrapErr;
 use sqlx::{PgPool, Postgres, Transaction};
 use thiserror::Error;
@@ -17,13 +19,13 @@ pub async fn set_nonce_for_address(
     State(db_pool): State<PgPool>,
 ) -> Result<Json<Uuid>, UserError> {
     let nonce = Uuid::new_v4();
-
+    let user_id: Address = user_id.parse().wrap_err("Failed to parse user id")?;
     let mut tx = db_pool
         .begin()
         .await
         .wrap_err("Failed to start sql transaction")?;
 
-    upsert_nonce_for_user_db(user_id.to_lowercase(), &nonce, &mut tx)
+    upsert_nonce_for_user_db(user_id.encode_hex(), &nonce, &mut tx)
         .await
         .wrap_err("Failed to upsert nonce for user")?;
 
