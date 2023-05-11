@@ -1,7 +1,6 @@
-#![feature(type_alias_impl_trait)]
-
 use battlemon_ethereum::{
     config::load_config,
+    address::ToHex,
     startup::App,
     telemetry::{build_subscriber, init_subscriber},
 };
@@ -10,7 +9,6 @@ use eyre::{Result, WrapErr};
 
 use once_cell::sync::Lazy;
 use reqwest::{Client, Method, RequestBuilder, Response};
-use uuid::Uuid;
 
 static TRACING: Lazy<()> = Lazy::new(|| {
     let default_filter_level = "info".to_string();
@@ -23,11 +21,25 @@ static TRACING: Lazy<()> = Lazy::new(|| {
     init_subscriber(subscriber).expect("Failed to init subscriber");
 });
 
+pub struct TestUser(Address);
+
+impl TestUser {
+    pub fn random() -> Self {
+        Self(Address::random())
+    }
+}
+
+impl TestUser {
+    pub fn id(&self) -> String {
+        self.0.to_hex()
+    }
+}
+
 pub struct TestApp {
     pub address: String,
     // pub db_name: String,
     // pub db_pool: PgPool,
-    pub test_user: Address,
+    pub test_user: TestUser,
 }
 
 impl TestApp {
@@ -79,7 +91,7 @@ pub async fn spawn_app() -> TestApp {
     //
     // ret
     TestApp {
-        test_user: Address::random(),
+        test_user: TestUser::random(),
         address,
     }
 }
