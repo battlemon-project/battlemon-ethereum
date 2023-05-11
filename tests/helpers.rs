@@ -1,6 +1,6 @@
 use battlemon_ethereum::{
-    config::load_config,
     address::ToHex,
+    config::load_config,
     startup::App,
     telemetry::{build_subscriber, init_subscriber},
 };
@@ -62,6 +62,10 @@ impl TestApp {
             .send()
             .await
             .wrap_err("Failed to make request")
+    }
+
+    pub fn test_user_id(&self) -> String {
+        self.test_user.id()
     }
 }
 
