@@ -5,6 +5,7 @@ use battlemon_ethereum::{
     startup::App,
     telemetry::{build_subscriber, init_subscriber},
 };
+use ethers::prelude::Address;
 use eyre::{Result, WrapErr};
 
 use once_cell::sync::Lazy;
@@ -26,7 +27,7 @@ pub struct TestApp {
     pub address: String,
     // pub db_name: String,
     // pub db_pool: PgPool,
-    // pub test_user: User,
+    pub test_user: Address,
 }
 
 impl TestApp {
@@ -77,6 +78,8 @@ pub async fn spawn_app() -> TestApp {
     // ret.test_user.store(&ret.db_pool).await;
     //
     // ret
-
-    TestApp { address }
+    TestApp {
+        test_user: Address::random(),
+        address,
+    }
 }
