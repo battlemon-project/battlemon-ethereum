@@ -1,5 +1,5 @@
 mod helpers;
-use eyre::{ensure, Result};
+use eyre::Result;
 
 use helpers::spawn_app;
 
