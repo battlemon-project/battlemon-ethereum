@@ -16,10 +16,16 @@ async fn nonce_for_new_user_works_correctly() {
     let status = response.status();
     assert!(
         status.is_success(),
-        "Failed to get nonce for user `{user_id}`. The status of response is `{status}`.\n
-        Error body: {}",
+        r#"
+        Failed to get nonce for user `{user_id}`.
+        The status of response is `{status}`.
+        Error body: {}
+        "#,
         response.text().await.unwrap()
     );
 
-    let _: Uuid = response.json().await.unwrap();
+    let _: Uuid = response
+        .json()
+        .await
+        .expect("Failed to deserialize body into `Uuid`");
 }
