@@ -8,7 +8,9 @@ use axum::{
     response::{IntoResponse, Response},
     RequestPartsExt, TypedHeader,
 };
+use ethers::abi::AbiEncode;
 use ethers::prelude::{Address, Signature, SignatureError};
+use ethers::utils::hex::ToHex;
 use eyre::{Report, Result, WrapErr};
 use serde::Deserialize;
 use sqlx::PgPool;
@@ -53,8 +55,7 @@ pub async fn web3_auth(
 ) -> Result<String, AuthError> {
     let ValidatedPayload { user_id, signature } =
         payload.try_into().map_err(AuthError::Validation)?;
-
-    let user_id_string = format!("0x{user_id:x}");
+    let user_id_string = user_id.encode_hex();
     let nonce = get_user_nonce_db(&user_id_string, &db_pool)
         .await
         .wrap_err("Failed to get nonce for user")?;
