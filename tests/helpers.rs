@@ -1,13 +1,13 @@
 use battlemon_ethereum::{
     address::ToHex,
     config::load_config,
+    config::DatabaseConfig,
     startup::App,
     telemetry::{build_subscriber, init_subscriber},
 };
-use ethers::prelude::Address;
+use ethers::prelude::{rand, Address, LocalWallet, Signer};
 use eyre::{ensure, Result, WrapErr};
 
-use battlemon_ethereum::config::DatabaseConfig;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Method, RequestBuilder, Response};
 use serde_json::Value;
@@ -44,6 +44,7 @@ pub struct TestApp {
     // pub db_name: String,
     pub db_pool: PgPool,
     pub test_user: TestUser,
+    pub wallet: LocalWallet,
 }
 
 impl TestApp {
@@ -91,6 +92,16 @@ impl TestApp {
 
         serde_json::from_value(json).wrap_err("Failed to deserialize `Uuid` from `Value`")
     }
+
+    pub async fn sign(&self, message: &str) -> Result<String> {
+        let signature = self
+            .wallet
+            .sign_message(message)
+            .await
+            .wrap_err("Failed to sign message")?;
+
+        Ok(signature.to_string())
+    }
 }
 
 pub async fn spawn_app() -> TestApp {
@@ -109,6 +120,7 @@ pub async fn spawn_app() -> TestApp {
         test_user: TestUser::random(),
         db_pool,
         address,
+        wallet: LocalWallet::new(&mut rand::thread_rng()),
     }
 }
 
