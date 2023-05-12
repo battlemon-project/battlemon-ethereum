@@ -18,6 +18,7 @@ use tracing::instrument;
 use uuid::Uuid;
 
 use crate::jwt::Jwt;
+use crate::routes::json_error;
 
 #[derive(Deserialize)]
 pub struct Payload {
@@ -128,13 +129,14 @@ pub enum AuthError {
 
 impl IntoResponse for AuthError {
     fn into_response(self) -> Response {
-        match self {
-            AuthError::Validation(_) => (StatusCode::BAD_REQUEST, self.to_string()),
-            AuthError::SignatureVerification(_) => (StatusCode::UNAUTHORIZED, self.to_string()),
-            AuthError::InvalidAuthToken => (StatusCode::BAD_REQUEST, self.to_string()),
-            AuthError::ExpiredAuthToken => (StatusCode::UNAUTHORIZED, self.to_string()),
-            AuthError::Unexpected(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
-        }
-        .into_response()
+        let status_code = match self {
+            AuthError::Validation(_) => StatusCode::BAD_REQUEST,
+            AuthError::SignatureVerification(_) => StatusCode::UNAUTHORIZED,
+            AuthError::InvalidAuthToken => StatusCode::BAD_REQUEST,
+            AuthError::ExpiredAuthToken => StatusCode::UNAUTHORIZED,
+            AuthError::Unexpected(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        };
+        let error = json_error(self.to_string());
+        (status_code, error).into_response()
     }
 }
