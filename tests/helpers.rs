@@ -5,12 +5,13 @@ use battlemon_ethereum::{
     startup::App,
     telemetry::{build_subscriber, init_subscriber},
 };
-use ethers::prelude::{rand, Address, LocalWallet, Signature, Signer};
+use ethers::prelude::{rand, LocalWallet, Signature, Signer};
 use eyre::{ensure, Result, WrapErr};
 
 use once_cell::sync::Lazy;
 use reqwest::{Client, Method, RequestBuilder, Response};
-use serde_json::Value;
+use serde::Serialize;
+use serde_json::json;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 
@@ -25,80 +26,110 @@ static TRACING: Lazy<()> = Lazy::new(|| {
     init_subscriber(subscriber).expect("Failed to init subscriber");
 });
 
-pub struct TestUser(pub Address);
-
-impl TestUser {
-    pub fn random() -> Self {
-        Self(Address::random())
-    }
-}
-
-impl TestUser {
-    pub fn id(&self) -> String {
-        self.0.to_hex()
-    }
-}
-
 pub struct TestApp {
     pub address: String,
     // pub db_name: String,
     pub db_pool: PgPool,
-    pub test_user: TestUser,
     pub wallet: LocalWallet,
 }
 
 impl TestApp {
-    fn http_request_builder(
+    pub fn user_address(&self) -> String {
+        self.wallet.address().to_hex()
+    }
+}
+
+impl TestApp {
+    fn http_request_builder<T: Serialize>(
         &self,
         method: Method,
         path: &str,
         query: Option<&str>,
+        json: Option<T>,
     ) -> RequestBuilder {
         let url = format!("http://{}/{path}", self.address);
-        Client::new().request(method, url).query(&query)
+        let ret = Client::new().request(method, url).query(&query);
+
+        match json {
+            None => ret,
+            Some(json) => ret.json(&json),
+        }
     }
 
     fn http_get_builder(&self, path: &str, query: Option<&str>) -> RequestBuilder {
-        self.http_request_builder(Method::GET, path, query)
+        self.http_request_builder::<()>(Method::GET, path, query, None)
+    }
+
+    fn http_post_builder<T: Serialize>(&self, path: &str, json: Option<T>) -> RequestBuilder {
+        self.http_request_builder(Method::POST, path, None, json)
     }
 
     pub async fn get(&self, path: &str, query: Option<&str>) -> Result<Response> {
-        self.http_get_builder(path, query)
+        let response = self
+            .http_get_builder(path, query)
             .send()
             .await
-            .wrap_err("Failed to make request")
+            .wrap_err("Failed to make request")?;
+
+        assert_success_status(response).await
+    }
+
+    pub async fn post<T: Serialize>(&self, path: &str, json: Option<T>) -> Result<Response> {
+        let response = self
+            .http_post_builder(path, json)
+            .send()
+            .await
+            .wrap_err("Failed to make request")?;
+
+        assert_success_status(response).await
     }
 
     pub async fn get_nonce_for_user(&self, user_id: &str) -> Result<Uuid> {
         let response = self
             .get(&format!("users/{user_id}/nonce"), None)
             .await
-            .wrap_err("Failed to execute request to spawned app")?;
+            .wrap_err("Failed to get nonce for user")?;
 
-        let status = response.status();
-        let json: Value = response
+        response
             .json()
             .await
-            .wrap_err("Failed to get serde Value from body for response")?;
-
-        ensure!(
-            status.is_success(),
-            r#"
-            Failed to get nonce for user `{user_id}`.
-            The status of response is `{status}`.
-            Error: {json}
-            "#,
-        );
-
-        serde_json::from_value(json).wrap_err("Failed to deserialize `Uuid` from `Value`")
+            .wrap_err("Failed to deserialize `Uuid` from `Value`")
     }
 
-    pub async fn sign(&self, message: impl Send + Sync + AsRef<[u8]>) -> Result<Signature> {
+    pub async fn web3_auth(&self, signature: &str, user_id: &str) -> Result<String> {
+        let json = json!({
+            "signature": signature,
+            "user_id": user_id,
+        });
+
+        self.post("web3_auth", Some(json))
+            .await
+            .wrap_err("Failed to authenticate user")?
+            .json()
+            .await
+            .wrap_err("Failed to deserialize json from body")
+    }
+
+    pub async fn sign(&self, message: &str) -> Result<Signature> {
         self.wallet
             .sign_message(message)
             .await
             .wrap_err("Failed to sign message")
     }
+}
+
+pub async fn assert_success_status(response: Response) -> Result<Response> {
+    let status = response.status();
+    ensure!(
+        status.is_success(),
+        "The response's status isn't 200-299.\nThe status is `{status}`.\nError: {body}",
+        body = response
+            .text()
+            .await
+            .wrap_err("Failed to get body from response")?
+    );
+
+    Ok(response)
 }
 
 pub async fn spawn_app() -> TestApp {
@@ -114,7 +145,6 @@ pub async fn spawn_app() -> TestApp {
     tokio::spawn(app.run_until_stopped());
 
     TestApp {
-        test_user: TestUser::random(),
         db_pool,
         address,
         wallet: LocalWallet::new(&mut rand::thread_rng()),
