@@ -1,38 +1,17 @@
 mod helpers;
 
-use std::collections::HashSet;
-use uuid::Uuid;
-
+use eyre::{Result, WrapErr};
 use helpers::spawn_app;
+use std::collections::HashSet;
 
 #[tokio::test]
-async fn nonce_for_user_works_correctly_many_times() {
+async fn every_nonce_for_user_is_unique() -> Result<()> {
     let app = spawn_app().await;
     let user_id = app.test_user.id();
     let mut nonces = HashSet::new();
     let expected_quantity_of_nonce = 10;
     for _ in 0..expected_quantity_of_nonce {
-        let response = app
-            .get(&format!("users/{user_id}/nonce"), None)
-            .await
-            .unwrap();
-
-        let status = response.status();
-        assert!(
-            status.is_success(),
-            r#"
-        Failed to get nonce for user `{user_id}`.
-        The status of response is `{status}`.
-        Error body: {}
-        "#,
-            response.text().await.unwrap()
-        );
-
-        let nonce: Uuid = response
-            .json()
-            .await
-            .expect("Failed to deserialize body into `Uuid`");
-
+        let nonce = app.get_nonce_for_user(&user_id).await?;
         nonces.insert(nonce);
     }
 
@@ -41,35 +20,16 @@ async fn nonce_for_user_works_correctly_many_times() {
         nonces.len(),
         "Collision of nonces occurred"
     );
+
+    Ok(())
 }
 
 #[tokio::test]
-async fn nonces_stored_in_database_correctly() {
+async fn nonces_stored_in_database_correctly() -> Result<()> {
     let app = spawn_app().await;
     let user_id = app.test_user.id();
-    let expected_quantity_of_nonce = 10;
-    for _ in 0..expected_quantity_of_nonce {
-        let response = app
-            .get(&format!("users/{user_id}/nonce"), None)
-            .await
-            .unwrap();
-
-        let status = response.status();
-        assert!(
-            status.is_success(),
-            r#"
-        Failed to get nonce for user `{user_id}`.
-        The status of response is `{status}`.
-        Error body: {}
-        "#,
-            response.text().await.unwrap()
-        );
-
-        let expected_nonce: Uuid = response
-            .json()
-            .await
-            .expect("Failed to deserialize body into `Uuid`");
-
+    for _ in 0..10 {
+        let nonce = app.get_nonce_for_user(&user_id).await?;
         let row = sqlx::query!(
             r#"
             select nonce from users
@@ -79,8 +39,10 @@ async fn nonces_stored_in_database_correctly() {
         )
         .fetch_one(&app.db_pool)
         .await
-        .expect("Failed to fetch stored nonce from database");
+        .wrap_err("Failed to fetch stored nonce from database")?;
 
-        assert_eq!(expected_nonce, row.nonce, "Nonces are not equal");
+        assert_eq!(nonce, row.nonce, "Nonces are not equal");
     }
+
+    Ok(())
 }
