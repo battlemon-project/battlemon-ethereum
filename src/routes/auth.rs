@@ -1,4 +1,6 @@
 use crate::address::ToHex;
+use crate::jwt::Jwt;
+use crate::routes::{json_error, json_success};
 use axum::{
     async_trait,
     extract::{FromRef, FromRequestParts},
@@ -16,9 +18,6 @@ use sqlx::PgPool;
 use thiserror::Error;
 use tracing::instrument;
 use uuid::Uuid;
-
-use crate::jwt::Jwt;
-use crate::routes::json_error;
 
 #[derive(Deserialize)]
 pub struct Payload {
@@ -52,7 +51,7 @@ pub async fn web3_auth(
     State(jwt): State<Jwt>,
     State(db_pool): State<PgPool>,
     Json(payload): Json<Payload>,
-) -> Result<String, AuthError> {
+) -> Result<impl IntoResponse, AuthError> {
     let ValidatedPayload { user_id, signature } =
         payload.try_into().map_err(AuthError::Validation)?;
     let user_id_string = user_id.to_hex();
@@ -66,7 +65,7 @@ pub async fn web3_auth(
 
     let jwt_token = jwt.encode(user_id_string.clone())?;
 
-    Ok(jwt_token)
+    Ok(json_success(jwt_token))
 }
 
 #[instrument(name = "Get nonce for user from database", skip(db_pool))]

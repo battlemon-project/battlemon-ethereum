@@ -1,10 +1,15 @@
+use axum::response::{IntoResponse, Response};
 use axum::{
     extract::FromRef,
     http::Request,
+    middleware,
     routing::{get, post},
-    Router,
+    Json, Router,
 };
+use serde::Serialize;
+use serde_json::{json, Value};
 use sqlx::PgPool;
+use std::fmt::Display;
 use tower::ServiceBuilder;
 use tower_http::{
     request_id::{MakeRequestId, RequestId},
@@ -62,4 +67,28 @@ impl MakeRequestId for MakeRequestUuid {
 
         Some(RequestId::new(request_id.parse().unwrap()))
     }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum JsonResponse<T> {
+    Success(T),
+    Error(T),
+}
+
+impl<T> IntoResponse for JsonResponse<T>
+where
+    T: Serialize,
+{
+    fn into_response(self) -> Response {
+        Json(self).into_response()
+    }
+}
+
+pub fn json_success<T: Serialize>(json: T) -> JsonResponse<T> {
+    JsonResponse::Success(json)
+}
+
+pub fn json_error<T: Display>(json: T) -> JsonResponse<String> {
+    JsonResponse::Error(json.to_string())
 }
