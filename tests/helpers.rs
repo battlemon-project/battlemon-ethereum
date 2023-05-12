@@ -5,7 +5,7 @@ use battlemon_ethereum::{
     startup::App,
     telemetry::{build_subscriber, init_subscriber},
 };
-use ethers::prelude::{rand, Address, LocalWallet, Signer};
+use ethers::prelude::{rand, Address, LocalWallet, Signature, Signer};
 use eyre::{ensure, Result, WrapErr};
 
 use once_cell::sync::Lazy;
@@ -93,14 +93,11 @@ impl TestApp {
         serde_json::from_value(json).wrap_err("Failed to deserialize `Uuid` from `Value`")
     }
 
-    pub async fn sign(&self, message: &str) -> Result<String> {
-        let signature = self
-            .wallet
+    pub async fn sign(&self, message: impl Send + Sync + AsRef<[u8]>) -> Result<Signature> {
+        self.wallet
             .sign_message(message)
             .await
-            .wrap_err("Failed to sign message")?;
-
-        Ok(signature.to_string())
+            .wrap_err("Failed to sign message")
     }
 }
 
