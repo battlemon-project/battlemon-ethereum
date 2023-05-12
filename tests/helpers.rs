@@ -5,11 +5,12 @@ use battlemon_ethereum::{
     telemetry::{build_subscriber, init_subscriber},
 };
 use ethers::prelude::Address;
-use eyre::{Result, WrapErr};
+use eyre::{ensure, Result, WrapErr};
 
 use battlemon_ethereum::config::DatabaseConfig;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Method, RequestBuilder, Response};
+use serde_json::Value;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 
@@ -24,7 +25,7 @@ static TRACING: Lazy<()> = Lazy::new(|| {
     init_subscriber(subscriber).expect("Failed to init subscriber");
 });
 
-pub struct TestUser(Address);
+pub struct TestUser(pub Address);
 
 impl TestUser {
     pub fn random() -> Self {
@@ -65,6 +66,30 @@ impl TestApp {
             .send()
             .await
             .wrap_err("Failed to make request")
+    }
+
+    pub async fn get_nonce_for_user(&self, user_id: &str) -> Result<Uuid> {
+        let response = self
+            .get(&format!("users/{user_id}/nonce"), None)
+            .await
+            .wrap_err("Failed to execute request to spawned app")?;
+
+        let status = response.status();
+        let json: Value = response
+            .json()
+            .await
+            .wrap_err("Failed to get serde Value from body for response")?;
+
+        ensure!(
+            status.is_success(),
+            r#"
+            Failed to get nonce for user `{user_id}`.
+            The status of response is `{status}`.
+            Error: {json}
+            "#,
+        );
+
+        serde_json::from_value(json).wrap_err("Failed to deserialize `Uuid` from `Value`")
     }
 }
 
