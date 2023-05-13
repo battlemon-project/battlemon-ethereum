@@ -1,19 +1,21 @@
 use chrono::{Duration, Utc};
 use eyre::{Result, WrapErr};
-use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{jwk::Jwk, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone)]
 pub struct Jwt {
     encoding_key: EncodingKey,
     decoding_key: DecodingKey,
+    jwk: Jwk,
 }
 
 impl Jwt {
-    pub fn new(encoding_key: EncodingKey, decoding_key: DecodingKey) -> Self {
+    pub fn new(encoding_key: EncodingKey, decoding_key: DecodingKey, jwk: Jwk) -> Self {
         Self {
             encoding_key,
             decoding_key,
+            jwk,
         }
     }
 
@@ -38,6 +40,10 @@ impl Jwt {
         )
         .map(|decoded| decoded.claims)
         .wrap_err("Failed to decode token")
+    }
+
+    pub fn jwk(&self) -> &Jwk {
+        &self.jwk
     }
 }
 
