@@ -1,19 +1,19 @@
-use battlemon_ethereum::{
-    address::ToHex,
-    config::load_config,
-    config::DatabaseConfig,
-    startup::App,
-    telemetry::{build_subscriber, init_subscriber},
-};
 use ethers::prelude::{rand, LocalWallet, Signature, Signer};
-use eyre::{ensure, Result, WrapErr};
-
+use eyre::{bail, ensure, Result, WrapErr};
 use once_cell::sync::Lazy;
 use reqwest::{Client, Method, RequestBuilder, Response};
 use serde::Serialize;
-use serde_json::json;
+use serde_json::{json, Value};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
+
+use battlemon_ethereum::{
+    address::ToHex,
+    config::{load_config, DatabaseConfig},
+    routes::JsonResponse,
+    startup::App,
+    telemetry::{build_subscriber, init_subscriber},
+};
 
 static TRACING: Lazy<()> = Lazy::new(|| {
     let default_filter_level = "info".to_string();
@@ -90,24 +90,29 @@ impl TestApp {
             .await
             .wrap_err("Failed to get nonce for user")?;
 
-        response
-            .json()
-            .await
-            .wrap_err("Failed to deserialize `Uuid` from `Value`")
+        let Ok(JsonResponse::Success(uuid)) = response.json().await else {
+               bail!("Failed to deserialize `Uuid` from `Value`");
+        };
+
+        Ok(uuid)
     }
 
-    pub async fn web3_auth(&self, signature: &str, user_id: &str) -> Result<String> {
+    pub async fn web3_auth(&self, signature: &str, user_id: &str) -> Result<Value> {
         let json = json!({
             "signature": signature,
             "user_id": user_id,
         });
 
-        self.post("web3_auth", Some(json))
+        let response = self
+            .post("web3_auth", Some(json))
             .await
-            .wrap_err("Failed to authenticate user")?
-            .json()
-            .await
-            .wrap_err("Failed to deserialize json from body")
+            .wrap_err("Failed to authenticate user")?;
+
+        let Ok(JsonResponse::Success(value)) = response.json().await else {
+            bail!("Failed to deserialize json from body");
+        };
+
+        Ok(value)
     }
 
     pub async fn sign(&self, message: &str) -> Result<Signature> {
