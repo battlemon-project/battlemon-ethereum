@@ -1,23 +1,25 @@
-use crate::address::ToHex;
-use crate::jwt::Jwt;
-use crate::routes::{json_error, json_success};
 use axum::{
     async_trait,
-    extract::{FromRef, FromRequestParts},
-    extract::{Json, State},
+    extract::{FromRef, FromRequestParts, Json, State},
     headers::{authorization::Bearer, Authorization},
-    http::request::Parts,
-    http::StatusCode,
+    http::{request::Parts, StatusCode},
     response::{IntoResponse, Response},
     RequestPartsExt, TypedHeader,
 };
 use ethers::prelude::{Address, Signature, SignatureError};
 use eyre::{Report, Result, WrapErr};
 use serde::Deserialize;
+use serde_json::json;
 use sqlx::PgPool;
 use thiserror::Error;
 use tracing::instrument;
 use uuid::Uuid;
+
+use crate::{
+    address::ToHex,
+    jwt::Jwt,
+    routes::{json_error, json_success},
+};
 
 #[derive(Deserialize)]
 pub struct Payload {
@@ -64,8 +66,12 @@ pub async fn web3_auth(
         .map_err(AuthError::SignatureVerification)?;
 
     let jwt_token = jwt.encode(user_id_string.clone())?;
+    let body = json!({
+        "jwt": jwt_token,
+        "jwk": jwt.jwk()
+    });
 
-    Ok(json_success(jwt_token))
+    Ok(json_success(body))
 }
 
 #[instrument(name = "Get nonce for user from database", skip(db_pool))]
