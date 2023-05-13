@@ -1,6 +1,13 @@
+use crate::jwt::Jwt;
 use base64::Engine;
 use eyre::{Result, WrapErr};
-use jsonwebtoken::{DecodingKey, EncodingKey};
+use jsonwebtoken::{
+    jwk::{
+        AlgorithmParameters, CommonParameters, EllipticCurve, Jwk, OctetKeyPairParameters,
+        OctetKeyPairType, PublicKeyUse,
+    },
+    DecodingKey, EncodingKey,
+};
 use ring::signature::{Ed25519KeyPair, KeyPair};
 use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
@@ -55,7 +62,7 @@ pub struct SecretsConfig {
 }
 
 impl SecretsConfig {
-    pub fn jwt_keys(&self) -> Result<(EncodingKey, DecodingKey)> {
+    pub fn jwt(&self) -> Result<Jwt> {
         let pkcs8v2_keypair_base64_encoded = self.key_pair.expose_secret();
         let key_pair_bytes = base64::engine::general_purpose::STANDARD
             .decode(pkcs8v2_keypair_base64_encoded)
@@ -63,9 +70,23 @@ impl SecretsConfig {
         let key_pair = Ed25519KeyPair::from_pkcs8_maybe_unchecked(&key_pair_bytes)
             .wrap_err("Failed to create `Ed25519KeyPair` from source")?;
         let encoding_key = EncodingKey::from_ed_der(&key_pair_bytes);
-        let decoding_key = DecodingKey::from_ed_der(key_pair.public_key().as_ref());
+        let public_key = key_pair.public_key().as_ref();
+        let decoding_key = DecodingKey::from_ed_der(public_key);
+        let base64encoded_public_key =
+            base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(public_key);
+        let jwk = Jwk {
+            common: CommonParameters {
+                public_key_use: Some(PublicKeyUse::Signature),
+                ..Default::default()
+            },
+            algorithm: AlgorithmParameters::OctetKeyPair(OctetKeyPairParameters {
+                key_type: OctetKeyPairType::OctetKeyPair,
+                curve: EllipticCurve::Ed25519,
+                x: base64encoded_public_key,
+            }),
+        };
 
-        Ok((encoding_key, decoding_key))
+        Ok(Jwt::new(encoding_key, decoding_key, jwk))
     }
 }
 
