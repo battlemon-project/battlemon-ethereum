@@ -1,11 +1,11 @@
-use crate::address::ToHex;
-use crate::routes::{json_error, json_success, JsonResponse};
+use crate::{
+    address::ToHex,
+    routes::{json_error, json_success},
+};
 use axum::{
-    extract::Path,
-    extract::State,
+    extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use ethers::prelude::Address;
 use eyre::WrapErr;
