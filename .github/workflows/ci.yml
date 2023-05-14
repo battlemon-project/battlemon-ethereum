@@ -90,7 +90,7 @@ jobs:
 
       - name: Check sqlx-data.json is up-to-date
         run: |
-          cargo sqlx prepare -- --bin ${{ env.CRATE_NAME }}
+          cargo sqlx prepare --database-url postgres://postgres:password@localhost:5433/auth_db -- --bin ${{ env.CRATE_NAME }}
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
