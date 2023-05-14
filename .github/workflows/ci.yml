@@ -33,11 +33,12 @@ jobs:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: auth_db
       POSTGRES_PORT: 5433
-      POSTGRES_PORT_MAPPING: '5433:5432'
+#      POSTGRES_PORT_MAPPING: '5433:5432'
+      DATABASE_URL: postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
     services:
       postgres:
         ports:
-          - ${{ env.POSTGRES_PORT_MAPPING }}
+          - 5433:5432
         image: postgres:15
 
     steps:
@@ -83,9 +84,9 @@ jobs:
             --no-default-features
             --locked
 
-      - name: Setup env for sqlx
-        run: |
-          export DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:${POSTGRES_PORT}/${POSTGRES_DB}
+      #      - name: Setup env for sqlx
+      #        run: |
+      #          export DATABASE_URL=postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
 
       - name: Migrate database
         run: |
