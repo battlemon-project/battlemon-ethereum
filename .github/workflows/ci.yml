@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SQLX_VERSION: 0.6.3
-      SQLX_FEATURES: postgres
+      SQLX_FEATURES: postgres, runtime-tokio-rustls
       CRATE_NAME: battlemon-ethereum
     services:
       postgres:
