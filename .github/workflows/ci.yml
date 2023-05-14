@@ -29,14 +29,13 @@ jobs:
       SQLX_DB_FEATURE: postgres
       TLS_FEATURE: native-tls
       CRATE_NAME: battlemon-ethereum
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: auth_db
-      POSTGRES_PORT: 5433
-    #      POSTGRES_PORT_MAPPING: '5433:5432'
-    #      DATABASE_URL: postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
     services:
       postgres:
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: auth_db
+          POSTGRES_PORT: 5433
         ports:
           - 5433:5432
         image: postgres:15
@@ -87,8 +86,7 @@ jobs:
       - name: Migrate database
         run: |
           sudo apt-get install libpq-dev -y
-          sqlx migrate run --database-url postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
-
+          sqlx migrate run --database-url postgres://postgres:password@localhost:5433/auth_db
 
       - name: Check sqlx-data.json is up-to-date
         run: |
