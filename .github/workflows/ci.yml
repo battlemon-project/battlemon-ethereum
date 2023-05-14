@@ -84,14 +84,10 @@ jobs:
             --no-default-features
             --locked
 
-      - name: Setup env for sqlx
-        run: |
-          export DATABASE_URL=postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
-
       - name: Migrate database
         run: |
           sudo apt-get install libpq-dev -y
-          sqlx migrate run 
+          sqlx migrate run --database-url postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
 
 
       - name: Check sqlx-data.json is up-to-date
