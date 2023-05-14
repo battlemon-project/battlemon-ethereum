@@ -1,0 +1,13 @@
+[app]
+host = "0.0.0.0"
+port = 8000
+
+[db]
+host = "localhost"
+port = 5433
+username = "postgres"
+password = "password"
+db_name = "auth_db"
+
+[secrets]
+key_pair = "MFMCAQEwBQYDK2VwBCIEINkBPNO+vP+Nou3EJlVERE4NzkJBrKBanUyymduZbg3LoSMDIQCL6qhw5WH7GqRHACXt6BUtyOJguttqF5kLVTiE/ufFRw=="
