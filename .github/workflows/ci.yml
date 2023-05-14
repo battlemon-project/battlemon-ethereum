@@ -34,9 +34,10 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
           POSTGRES_DB: auth_db
-          ports:
-            - 5433:5432
+        ports:
+          - 5433:5432
         image: postgres:15
+
     steps:
       - name: Git clone the repository
         uses: actions/checkout@v3
