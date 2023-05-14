@@ -26,7 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SQLX_VERSION: 0.6.3
-      SQLX_FEATURES: postgres, runtime-tokio-rustls
+      SQLX_DB_FEATURE: postgres
+      SQLX_RUNTIME_FEATURE: runtime-tokio-native-tls
       CRATE_NAME: battlemon-ethereum
     services:
       postgres:
@@ -66,7 +67,7 @@ jobs:
           path: |
             ~/.cargo/bin/sqlx
             ~/.cargo/bin/cargo-sqlx
-          key: ${{ runner.os }}-sqlx-${{ env.SQLX_VERSION }}-${{ env.SQLX_FEATURES }}
+          key: ${{ runner.os }}-sqlx-${{ env.SQLX_VERSION }}-${{ env.SQLX_DB_FEATURE }}-${{ env.SQLX_RUNTIME_FEATURE }}
 
       - name: Install sqlx-cli
         uses: actions-rs/cargo@v1
@@ -77,7 +78,7 @@ jobs:
             sqlx-cli
             --force
             --version=${{ env.SQLX_VERSION }}
-            --features=${{ env.SQLX_FEATURES }}
+            --features=${{ env.SQLX_DB_FEATURE }},${{ env.SQLX_RUNTIME_FEATURE }}
             --no-default-features
             --locked
 
