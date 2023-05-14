@@ -95,19 +95,19 @@ pub fn load_config() -> Result<MainConfig> {
         .wrap_err("Failed to determine the current directory")?
         .join("config");
 
-    let env: Environment = std::env::var("APP_ENV")
-        .unwrap_or_else(|_| "local".into())
+    let current_environment: Environment = std::env::var("APP_ENV")
+        .unwrap_or_else(|_| "local".to_owned())
         .parse()
         .wrap_err("Failed to parse APP_ENV")?;
 
-    let env_filename = format!("{}.toml", env.to_string());
+    let file_source_setup =
+        config::File::from(config_path.join(current_environment.to_string())).required(false);
+    let env_vars_source_setup = config::Environment::with_prefix("APP")
+        .prefix_separator("_")
+        .separator("__");
     let config = config::Config::builder()
-        .add_source(config::File::from(config_path.join(env_filename)))
-        .add_source(
-            config::Environment::with_prefix("APP")
-                .prefix_separator("_")
-                .separator("__"),
-        )
+        .add_source(file_source_setup)
+        .add_source(env_vars_source_setup)
         .build()
         .wrap_err("Failed to build config")?;
 
