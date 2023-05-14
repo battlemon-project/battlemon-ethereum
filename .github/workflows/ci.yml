@@ -5,8 +5,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  fmt:
-    name: Rustfmt
+  check_formatting:
+    name: Checking formatting for whole project
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -19,6 +19,81 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
+
+
+  test:
+    name: Setup testing environment and make tests
+    runs-on: ubuntu-latest
+    env:
+      SQLX_VERSION: 0.6.3
+      SQLX_FEATURES: postgres
+      CRATE_NAME: battlemon-ethereum
+    services:
+      postgres:
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: auth_db
+          ports:
+            - 5433:5432
+        image: postgres:15
+    steps:
+      - name: Git clone the repository
+        uses: actions/checkout@v3
+
+      - name: Cache dependencies
+        id: cache-dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Cache sqlx-cli
+        uses: actions/cache@v3
+        id: cache-sqlx
+        with:
+          path: |
+            ~/.cargo/bin/sqlx
+            ~/.cargo/bin/cargo-sqlx
+          key: ${{ runner.os }}-sqlx-${{ env.SQLX_VERSION }}-${{ env.SQLX_FEATURES }}
+
+      - name: Install sqlx-cli
+        uses: actions-rs/cargo@v1
+        if: steps.cache-sqlx.outputs.cache-hit == false
+        with:
+          command: install
+          args: >
+            sqlx-cli
+            --force
+            --version=${{ env.SQLX_VERSION }}
+            --features=${{ env.SQLX_FEATURES }}
+            --no-default-features
+            --locked
+
+      - name: Migrate database
+        run: |
+          sudo apt-get install libpq-dev -y
+          sqlx migrate run 
+
+      - name: Check sqlx-data.json is up-to-date
+        run: |
+          cargo sqlx prepare -- --bin ${{ env.CRATE_NAME }}
+
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+
 
   build_image_and_push_to_amazon_ecr:
     permissions:
