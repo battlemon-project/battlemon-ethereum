@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  check_formatting:
+  format:
     name: Checking formatting for whole project
     runs-on: ubuntu-latest
     steps:
@@ -97,7 +97,8 @@ jobs:
           command: test
 
 
-  build_image_and_push_to_amazon_ecr:
+  docker:
+    name: Build docker image and push it to Amazon ECR
     permissions:
       id-token: write   # This is required for requesting the JWT
       contents: read    # This is required for actions/checkout
