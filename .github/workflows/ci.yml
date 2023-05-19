@@ -107,7 +107,7 @@ jobs:
       id-token: write   # This is required for requesting the JWT
       contents: read    # This is required for actions/checkout
     env:
-      AWS_REGION: "ap-southeast-1"
+      AWS_REGION: "eu-central-1"
     runs-on: ubuntu-latest
     steps:
       - name: Git clone the repository
@@ -116,7 +116,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::941572822749:role/ecr-github-actions
+          role-to-assume: arn:aws:iam::987666890397:role/github-actions-ecr-poweruser-access
           role-session-name: ecr-github-actions-push-docker-image
           aws-region: ${{ env.AWS_REGION }}
 
@@ -134,7 +134,7 @@ jobs:
         id: build-push-ecr
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: battlemon-ethereum
+          REPOSITORY: web3-auth-server-rust
         uses: docker/build-push-action@v4
         with:
           platforms: linux/amd64
